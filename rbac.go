@@ -22,8 +22,8 @@ type Role struct {
 var permissionToRoles = map[string][]string{}
 var resourceTypeToRoles = map[string]map[string]bool{}
 
-// Call at init. Loads the roles from which access checks will be done.
-func LoadRoles(roles []*Role) error {
+// Call at init. Sets the roles from which access checks will be done.
+func Init(roles ...*Role) error {
 	// ensure there are no duplicate ids
 	rolesMap := map[string]*Role{}
 	for _, role := range roles {
@@ -106,6 +106,7 @@ func (a *Authorizer) AddRolesAsync(f func() ([]string, error)) {
 
 // Returns a combined error of all the async fetch errors that occurred if any.
 func (a *Authorizer) AsyncFetchErr() error {
+	a.wg.Wait()
 	errors := []string{}
 	a.asyncErrors.Range(func(key, value interface{}) bool {
 		errors = append(errors, key.(string))
@@ -119,6 +120,7 @@ func (a *Authorizer) AsyncFetchErr() error {
 
 // Returns whether the user has access to the specified permission.
 func (a *Authorizer) HasAccess(permission string) bool {
+	a.wg.Wait()
 	rolesThatGiveAccess := permissionToRoles[permission]
 	for _, role := range rolesThatGiveAccess {
 		if _, ok := a.roles.Load(role); ok {
